@@ -1,0 +1,138 @@
+---
+title: "Report"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+Date <- Sys.Date()
+```
+
+## R Markdown report for analysing  personal activity dataset
+
+Dataset obtained from here. [Activity Monitoring Data Link](https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip)   
+Accessed on this date `r Date `  
+
+Let's get into it in the following steps :
+
+1. **Loading and preprocessing the data**
+
+```{r Loading Data}
+#Downloading the data first
+        #InputFileUrl <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip"
+        #download.file(InputFileUrl, "./Data.zip", method = "curl")
+        #unzip("./Data.zip")
+
+# Reading the data 
+        InputData <- read.csv("./activity.csv", header = T, stringsAsFactors = F)
+        # Doing some checks
+        dim(InputData)
+        summary(InputData)
+        M <- max(InputData$interval)
+        
+```
+
+Data loading is completed as you can see.  
+  
+2. **What is mean total number of steps taken per day?**  
+
+First we'll see how many minutes are there in a day. Therefore each day in the interval column ends after 1440 minutes. However max minutes continously recorded is 2355 minutes i.e, this is the last
+data point before 2nd day ends. After that the timer is reset to 0 minutes. Thus for this data the day breaks at 1440 and 2355 minutes alternatively marking Day x and Day x+1 repeatingly.  
+
+Let's look at the code for better understanding.
+
+```{r Mean_steps}
+# minutes in a day
+        Minutes_Per_Day <- (24*60)
+
+        Day_Break_Indices <- which(InputData$interval == Minutes_Per_Day | InputData$interval == max(InputData$interval))
+        Total_Day_Breaks <- length(Day_Break_Indices)
+
+# we can add a new column to our data indicating the running day.
+        InputData$Day <- unlist(mapply(rep, (1:Total_Day_Breaks), c(Day_Break_Indices[1], Day_Break_Indices[2] -Day_Break_Indices[1] )))
+        
+# This would explain it better
+        head(InputData[which(InputData$interval == Minutes_Per_Day | InputData$interval == max(InputData$interval)) +1,])
+
+# Histogram of ( total steps each day )
+        Steps_Daywise <- aggregate(InputData[,1], list(InputData[,4]), sum, na.rm = T)
+        hist(Steps_Daywise$x)
+# Mean steps taken
+        Mean_Steps_Daywise <- aggregate(InputData[,1], list(InputData[,4]), mean, na.rm = T)
+# Median steps per day
+        Median_Steps_Daywise <- aggregate(InputData[,1], list(InputData[,4]), median, na.rm = T)
+        
+```
+
+ 
+Moving on next thing to calculate.
+
+3. **What is the average daily activity pattern ? **
+
+a. Make a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all days (y-axis)
+
+```{r Time series plot}
+library(reshape2)
+library(dplyr)
+
+New_df <- melt(InputData, id =2:4, na.rm = T)
+Timeseries_Data <- dcast(New_df, interval~variable, mean)
+
+plot(steps~interval, data = Timeseries_Data, type="l", main = "Timeseries plot", xlab = "5-minute interval", ylab="Avg steps across days")
+
+```
+
+
+b. Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?
+
+```{r}
+# Following 5 minutes interval has the max steps
+Timeseries_Data[ which.max(Timeseries_Data$steps),1]
+
+```
+
+4. **Imputing missing values**
+
+As there are a number of days/intervals where there are missing values (coded as NA). The presence of missing days may introduce bias into some calculations or summaries of the data.  
+
+
+a. Calculate and report the total number of missing values in the dataset (i.e. the total number of rows with NAs)
+
+```{r}
+# Total missing values (steps measurements)
+sum(is.na(InputData$steps)) # rows
+
+```
+
+b. Devise a strategy for filling in all of the missing values in the dataset. The strategy does not need to be sophisticated. For example, you could use the mean/median for that day, or the mean for that 5-minute interval, etc.
+
+
+```{r}
+
+InputData[is.na(InputData$steps),1] 
+
+
+```
+
+
+Some other  junk here
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
