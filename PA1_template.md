@@ -6,25 +6,19 @@ output:
 ---
 
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-Date <- Sys.Date()
-library(ggplot2)
-library(lubridate)
-library(reshape2)
-library(dplyr)
-```
+
 
 ## R Markdown report for analysing  personal activity dataset
 
 Dataset obtained from here. [Activity Monitoring Data Link](https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip)   
-Accessed on this date `r Date `  
+Accessed on this date 2020-08-29  
 
 Let's get into it in the following steps :
 
 **1. Loading and preprocessing the data**
 
-```{r Loading Data}
+
+```r
 #Downloading the data first
         InputFileUrl <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip"
         download.file(InputFileUrl, "./Data.zip", method = "curl")
@@ -34,16 +28,33 @@ Let's get into it in the following steps :
         InputData <- read.csv("./activity.csv", header = T, stringsAsFactors = F)
         # Doing some checks
         dim(InputData)
-        summary(InputData)
+```
 
+```
+## [1] 17568     3
+```
+
+```r
+        summary(InputData)
+```
+
+```
+##      steps            date              interval     
+##  Min.   :  0.00   Length:17568       Min.   :   0.0  
+##  1st Qu.:  0.00   Class :character   1st Qu.: 588.8  
+##  Median :  0.00   Mode  :character   Median :1177.5  
+##  Mean   : 37.38                      Mean   :1177.5  
+##  3rd Qu.: 12.00                      3rd Qu.:1766.2  
+##  Max.   :806.00                      Max.   :2355.0  
+##  NA's   :2304
 ```
 
 Data loading is completed as you can see.  
   
 **2. What is mean total number of steps taken per day?**  
 
-```{r Mean_steps}
 
+```r
 # Reformatting the date column and extracting date
 InputData$date <- as.Date(InputData$date)
 
@@ -55,11 +66,26 @@ InputData$date <- as.Date(InputData$date)
         ggplot(Steps_Daywise, aes(x=Steps)) + geom_histogram(bins=10,color="white", fill="black") + geom_histogram(binwidth=2) +labs(title = "Histogram plot",
        subtitle = "For original data",
        y = "Frequency", x = "Number of steps")
-        
+```
+
+```
+## Warning: Removed 8 rows containing non-finite values (stat_bin).
+
+## Warning: Removed 8 rows containing non-finite values (stat_bin).
+```
+
+![](PA1_template_files/figure-html/Mean_steps-1.png)<!-- -->
+
+```r
 # Mean & median (total steps each day)
         Mean_Of_DaywiseSteps <- summary(Steps_Daywise$Steps)[4]
         Median_Of_DaywiseSteps <- summary(Steps_Daywise$Steps)[3]
         summary(Steps_Daywise$Steps)
+```
+
+```
+##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
+##      41    8841   10765   10766   13294   21194       8
 ```
 
  
@@ -69,8 +95,8 @@ Moving on next thing to calculate.
 
 a. Make a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all days (y-axis)
 
-```{r Time series plot}
 
+```r
 New_df <- melt(InputData, id =2:3, na.rm = T)
 Timeseries_Data <- dcast(New_df, interval~variable, mean)
 
@@ -78,16 +104,21 @@ ggplot( data = Timeseries_Data, aes(interval, steps)) + geom_line(color = "steel
   geom_point(color="steelblue") + labs(title = "Timeseries plot",
        subtitle = "For original data",
        y = "Avg steps across days", x = "5-minute interval")
-
 ```
+
+![](PA1_template_files/figure-html/Time series plot-1.png)<!-- -->
 
 
 b. Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?
 
-```{r}
+
+```r
 # Following 5 minutes interval has the max steps
 Timeseries_Data[ which.max(Timeseries_Data$steps),1]
+```
 
+```
+## [1] 835
 ```
 
 **4. Imputing missing values**
@@ -97,17 +128,22 @@ As there are a number of days/intervals where there are missing values (coded as
 
 a. Calculate and report the total number of missing values in the dataset (i.e. the total number of rows with NAs)
 
-```{r}
+
+```r
 # Total missing values (steps measurements)
 NA_Indices <- is.na(InputData$steps)
 sum(NA_Indices) # rows
+```
 
+```
+## [1] 2304
 ```
 
 b. Devise a strategy for filling in all of the missing values in the dataset. The strategy does not need to be sophisticated. For example, you could use the mean/median for that day, or the mean for that 5-minute interval, etc.
 
 
-```{r}
+
+```r
 # We will be replacing the missing values with mean for that 5-minute interval
 
 # Following fn gets the mean for a particular 5-minute interval
@@ -121,13 +157,12 @@ TidyData <- InputData
 
 # NewData with missing values filled
 TidyData[NA_Indices, 1] <- mapply(function(x,y){x=y}, TidyData[NA_Indices, 1], ceiling(Steps_For_Interval))
-
 ```
 
 Our new dataset is ready. Let's see the impact of imputing missing data.
 
-```{r}
 
+```r
 # Histogram of ( total steps each day )  
         Revised_Steps_Daywise <- aggregate(TidyData[,1], list(TidyData[,2]), sum, na.rm = T)  
         colnames(Revised_Steps_Daywise) <- c("Day", "Steps")  
@@ -136,17 +171,26 @@ Our new dataset is ready. Let's see the impact of imputing missing data.
           geom_histogram(bins=10,color="white", fill="black") + 
                 geom_histogram(binwidth=2) +labs(title = "Histogram plot",
        subtitle = "For newly imputated data", y = "Frequency", x = "Number of steps")
-        
+```
+
+![](PA1_template_files/figure-html/unnamed-chunk-4-1.png)<!-- -->
+
+```r
 # Mean & median (total steps each day)  
         Rev_Mean_Of_DaywiseSteps <- summary(Revised_Steps_Daywise$Steps)[4]  
         Rev_Median_Of_DaywiseSteps <- summary(Revised_Steps_Daywise$Steps)[3]  
         summary(Revised_Steps_Daywise$Steps)
 ```
 
+```
+##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+##      41    9819   10909   10785   12811   21194
+```
+
 Impact of imputing missing data summarised :   
   - Y-Axis (Frequency) of Revised Histogram of ( total steps each day ) values have changed. Resemblance appears to be same as above ( but the revised plot seems to be more approaching to standard Normal distribution ).  
-  - Mean appears to be shifted from `r Mean_Of_DaywiseSteps` to `r Rev_Mean_Of_DaywiseSteps` which is expected as new data points are added.  
-  - Median also appears to be shifted from `r Median_Of_DaywiseSteps` to `r Rev_Median_Of_DaywiseSteps` which is expected as new data points are added.  
+  - Mean appears to be shifted from 1.0766189\times 10^{4} to 1.0784918\times 10^{4} which is expected as new data points are added.  
+  - Median also appears to be shifted from 1.0765\times 10^{4} to 1.0909\times 10^{4} which is expected as new data points are added.  
 
 One interesting thing to know would be to ask this following question.    
 
@@ -154,8 +198,8 @@ One interesting thing to know would be to ask this following question.
 
 Lets first create a new factor variable in the dataset with two levels -- "weekday" and "weekend" indicating whether a given date is a weekday or weekend day.  We will be using the imputed data for this.  
 
-```{r Weeday_VS_Weekend_Activity}
 
+```r
 TidyData$WeekPeriod <- rep(NA, dim(TidyData)[1])
 TidyData$WeekPeriod <- as.factor(sapply(TidyData$date, function(x){ifelse( (wday(x) %in% c(1,7) ),"weekend","weekday" )}))
 
@@ -168,8 +212,9 @@ ggplot( data = Rev_Timeseries_Data, aes(interval, steps)) + geom_line(color = "s
   geom_point(color="steelblue") + labs(title = "Timeseries plot",
        subtitle = "For newly imputated data",
        y = "Avg steps across days", x = "5-minute interval") + facet_wrap(~WeekPeriod)
-
 ```
+
+![](PA1_template_files/figure-html/Weeday_VS_Weekend_Activity-1.png)<!-- -->
 
 
 
